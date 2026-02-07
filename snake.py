@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+import time
 
 WIDTH = 1920
 HEIGHT = 1080
@@ -136,6 +137,11 @@ def drawGrid():
             rect = pygame.Rect(x,y,block,block)
             pygame.draw.rect(screen,"#002B6B",rect,1)
 
+def showText(text,x,y,color='white'):
+    font = pygame.font.SysFont("Times New Roman",30)
+    text = font.render(text,True,color)
+    screen.blit(text,(x,y))
+
 
 
 def menu():
@@ -179,6 +185,10 @@ def menu():
 
         pygame.display.flip()
         clock.tick(9)
+
+def checkEndGame(score):
+    if score == block_height*block_width:
+        return True
    
 def singleplayer():
     running = True
@@ -216,6 +226,9 @@ def singleplayer():
         gameOver = move(snake,direction,snake2)
         if gameOver:
             running = False
+            showText(f"Game Over; Score: {score}", WIDTH // 2 - 50 - len(f"Game Over; Score: {score}") * 5, HEIGHT // 2)
+            pygame.display.flip()
+            time.sleep(5)
         drawSnake(snake)
         # drawSnake(snake2)
         # move(snake2,direction)
@@ -277,12 +290,40 @@ def twoplayer():
         drawGrid()
         gameOver = move(snake,direction,snake2)
         gameOver2 = move(snake2,direction2,snake)
+        if checkEndGame(score):
+            gameOver = True
+            message = f"Game Over; Score p1: {score}"
+            message2 = f"Game Over; Score p2: {score2}"
+            if score > score2:
+                message3 = "Snake 1 WINS!"
+            else:
+                message3 = "Snake 2 WINS!"
+            showText(message, WIDTH // 2 - 50 - len(message) * 5, HEIGHT // 2 - 50)
+            showText(message2, WIDTH // 2 - 50 - len(message2) * 5, HEIGHT // 2 -20)
+            showText(message3, WIDTH // 2 - 50 - len(message3) * 5, HEIGHT // 2 +10,color='green')
+                
         if gameOver:
             print("Snake 1 loses")
+            message = f"Game Over; Score p1: {score}"
+            message2 = f"Game Over; Score p2: {score2}"
+            message3 = "Snake 2 WINS!"
+            showText(message, WIDTH // 2 - 50 - len(message) * 5, HEIGHT // 2 - 50)
+            showText(message2, WIDTH // 2 - 50 - len(message2) * 5, HEIGHT // 2 -20)
+            showText(message3, WIDTH // 2 - 50 - len(message3) * 5, HEIGHT // 2 +10,color='green')
             running = False
+            pygame.display.flip()
+            time.sleep(5)
         if gameOver2:
             print("Snake 2 loses")
+            message = f"Game Over; Score p1: {score}"
+            message2 = f"Game Over; Score p2: {score2}"
+            message3 = "Snake 1 WINS!"
+            showText(message, WIDTH // 2 - 50 - len(message) * 5, HEIGHT // 2 - 50)
+            showText(message2, WIDTH // 2 - 50 - len(message2) * 5, HEIGHT // 2 -20)
+            showText(message3, WIDTH // 2 - 50 - len(message3) * 5, HEIGHT // 2 +10,color='green')
+            pygame.display.flip()
             running = False
+            time.sleep(5)
         drawSnake(snake)
         drawSnake(snake2)
         # drawSnake(snake2)
