@@ -1,8 +1,13 @@
 import pygame
 import random
+import math
 
-WIDTH = 700
-HEIGHT = 700
+WIDTH = 1920
+HEIGHT = 1080
+block_width = WIDTH/35
+block_height = HEIGHT/35
+block_width = math.floor(block_width)
+block_height = math.floor(block_height)
 pygame.init()
 screen = pygame.display.set_mode((WIDTH,HEIGHT))
 clock = pygame.time.Clock()
@@ -22,7 +27,7 @@ def moveRight(snake):
     while a > 0:
         snake[a] = snake[a-1]
         a-=1
-    if (i,j+1) in snake or j+1 > 20 or j+1 < 0 :
+    if (i,j+1) in snake or j+1 >= block_width or j+1 < 0 :
         print("Game Over")
         snake[0] = (i,j+1)
         return True
@@ -38,7 +43,7 @@ def moveLeft(snake):
     while a > 0:
         snake[a] = snake[a-1]
         a-=1    
-    if (i,j-1) in snake or j-1 > 20 or j-1 < 0:
+    if (i,j-1) in snake or j-1 >= block_width or j-1 < 0:
         print("Game Over")
         snake[0] =  (i,j-1)
         return True
@@ -53,7 +58,7 @@ def moveDown(snake):
     while a > 0:
         snake[a] = snake[a-1]
         a-=1
-    if (i+1,j) in snake or i+1 > 20 or i+1 < 0:
+    if (i+1,j) in snake or i+1 >= block_height or i+1 < 0:
         print("Game Over")
         snake[0] =  (i+1,j)
         return True
@@ -67,7 +72,7 @@ def moveUp(snake):
     while a > 0:
         snake[a] = snake[a-1]
         a-=1
-    if (i-1,j) in snake or i-1 > 20 or i-1 < 0:
+    if (i-1,j) in snake or i-1 >= block_height or i-1 < 0:
         print("Game Over")
         snake[0] =  (i-1,j)
         return True
@@ -100,10 +105,11 @@ def addLenght(snake,direction):
 
 def generateSnack(snake):
     while True:
-        i = random.randint(0,19)
-        j = random.randint(0,19)
+        i = random.randint(0,block_height-1)
+        j = random.randint(0,block_width-1)
         if (i,j) not in snake:
             return i,j
+
 
 def drawSnack(i,j):
     rect = pygame.Rect(j*35,i*35,35,35)
