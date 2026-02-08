@@ -1,7 +1,9 @@
+import threading
 import pygame
 import random
 import math
 import time
+from client import GameClient
 
 WIDTH = 1920
 HEIGHT = 1080
@@ -172,6 +174,7 @@ def menu():
                     running = False
                     return
                 if button3_rect.collidepoint(mouse_pos):
+                    multiplayer()
                     running = False
                     return
 
@@ -340,6 +343,77 @@ def twoplayer():
             i,j = generateSnack(snake + snake2)
         drawSnack(i,j)
         # displayImage(x,y,cat)
+        pygame.display.flip()
+        clock.tick(9)
+
+def multiplayer():
+    client = GameClient()
+    threading.Thread(target=client.start, daemon=True).start()
+    score = 0
+    score2 = 0
+    gameOver = False
+    gameOver2 = False
+    running = True
+    print("RUNNING GAME LOOP")
+    while running:
+        if client.winner > 0:
+            running = False
+        snake = client.snake1
+        snake2 = client.snake2
+        i, j = client.snack
+        print("snake1:", snake)
+        print("snake2:", snake2)
+        print("snack:", (i, j))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_0]:
+            screen.fill("green")
+            pygame.display.flip()
+        if keys[pygame.K_w]:
+            if client.direction != '3':
+                client.direction = '1'
+        if keys[pygame.K_s]:
+            if client.direction != '1':
+                client.direction = '3'
+        if keys[pygame.K_d]:
+            if client.direction != '4':
+                client.direction = '2'
+        if keys[pygame.K_a]:
+            if client.direction != '2':
+                client.direction = '4'
+
+        screen.fill("black")
+        drawGrid()
+        if gameOver:
+            print("Snake 1 loses")
+            message = f"Game Over; Score p1: {score}"
+            message2 = f"Game Over; Score p2: {score2}"
+            message3 = "Snake 2 WINS!"
+            showText(message, WIDTH // 2 - 50 - len(message) * 5, HEIGHT // 2 - 50)
+            showText(message2, WIDTH // 2 - 50 - len(message2) * 5, HEIGHT // 2 -20)
+            showText(message3, WIDTH // 2 - 50 - len(message3) * 5, HEIGHT // 2 +10,color='green')
+            running = False
+            pygame.display.flip()
+            time.sleep(5)
+        if gameOver2:
+            print("Snake 2 loses")
+            message = f"Game Over; Score p1: {score}"
+            message2 = f"Game Over; Score p2: {score2}"
+            message3 = "Snake 1 WINS!"
+            showText(message, WIDTH // 2 - 50 - len(message) * 5, HEIGHT // 2 - 50)
+            showText(message2, WIDTH // 2 - 50 - len(message2) * 5, HEIGHT // 2 -20)
+            showText(message3, WIDTH // 2 - 50 - len(message3) * 5, HEIGHT // 2 +10,color='green')
+            pygame.display.flip()
+            running = False
+            time.sleep(5)
+        print("Drawing snakes and snack")
+        drawSnake(snake)
+        drawSnake(snake2)
+        drawSnack(i,j)
         pygame.display.flip()
         clock.tick(9)
 

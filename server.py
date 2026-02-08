@@ -1,169 +1,106 @@
 import socket
 import threading
-import random
-import math
 import asyncio
+import struct
+from game import Game
+import sys
+
 
 clients = []
-TICKRATE = 20
+running = True
+TICKRATE = 9
+
+
+def sendData(snake1,snake2,snack,winner):
+    print("Sending data to clients")
+    print(f"Snake1: {snake1} Snake2: {snake2} Snack: {snack} Winner: {winner}")
+    data = bytearray()
+    data.append(winner)
+    data.append(len(snake1))  # długość
+    for x, y in snake1:
+        data += struct.pack("!BB", x, y)
+    data.append(len(snake2))  # długość
+    for x, y in snake2:
+        data += struct.pack("!BB", x, y)
+    data += struct.pack("!BB", snack[0], snack[1])
+    for client in clients:
+        client.send(data)
+
+    if winner != 0:
+        print(f"Winner: {winner}")
+        off()
+    
+
+game = Game(sendData)
+# def pack_snake(snake):
+#     data = bytearray()
+#     data.append(len(snake))  # długość
+#     for x, y in snake:
+#         data += struct.pack("!BB", x, y)
+#     return data
+
+def off():
+    for client in clients:
+        client.close()
+    print("Shutting down server")
+    global running
+    running = False  
+    sys.exit(0)
+    
 
 def handle_client(conn):
     print(conn)
-    while True:
-        message = conn.recv(1).decode()
-        if not message:
+    id  = len(clients) - 1
+    print(f"Client {id} connected")
+    message = 2
+    while running:
+        try:
+            raw = conn.recv(1)
+        except (ConnectionResetError, ConnectionAbortedError):
+            print(f"Client {id} disconnected (reset)")
             break
+        if not raw:
+            print(f"Client {id} disconnected")
+            break
+        data = raw.decode()
+        if data not in ['1','2','3','4']:
+            print(f"Received invalid data from client {id}: {data}")
+        else:
+            message = data
+        if id == 0:
+            print(f"Zmieniam kierunek na gracza nr 1: {message}")
+            game.direction = int(message)
+        else:
+            print(f"Zmieniam kierunek na gracza nr 2: {message}")
+            game.direction2 = int(message)
     clients.remove(conn)
     conn.close()
+
+def start_game_loop():
+    asyncio.run(game.game_loop())
+
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
     server.bind(('localhost',55400))
     server.listen(2)
-    while True:
-        client,adress = server.accept()
-        connected_client = threading.Thread(target=handle_client,args=(client,))
-        connected_client.start()
-        clients.append(client)
-
-
-WIDTH = 1920
-HEIGHT = 1080
-block_width = WIDTH/35
-block_height = HEIGHT/35
-block_width = math.floor(block_width)
-block_height = math.floor(block_height)
-
-def checkEndGame(score):
-    if score == block_height*block_width:
-        return True
-    
-def moveRight(snake,snake2):
-    i,j = snake[0] 
-    lenght = len(snake)
-    a = lenght-1
-    while a > 0:
-        snake[a] = snake[a-1]
-        a-=1
-    if (i,j+1) in snake or (i,j+1) in snake2 or j+1 >= block_width or j+1 < 0 :
-        print("Game Over")
-        snake[0] = (i,j+1)
-        return True
-    snake[0] = (i,j+1)
-    return False
-    
-    # snake.pop()
-    # snake.append((i,j))
-def moveLeft(snake,snake2):
-    i,j = snake[0] 
-    lenght = len(snake)
-    a = lenght-1
-    while a > 0:
-        snake[a] = snake[a-1]
-        a-=1    
-    if (i,j-1) in snake or (i,j-1) in snake2 or j-1 >= block_width or j-1 < 0:
-        print("Game Over")
-        snake[0] =  (i,j-1)
-        return True
-    snake[0] = (i,j-1)
-    return False
-
-
-def moveDown(snake,snake2):
-    i,j = snake[0] 
-    lenght = len(snake)
-    a = lenght-1
-    while a > 0:
-        snake[a] = snake[a-1]
-        a-=1
-    if (i+1,j) in snake or (i+1,j) in snake2 or i+1 >= block_height or i+1 < 0:
-        print("Game Over")
-        snake[0] =  (i+1,j)
-        return True
-    snake[0] =  (i+1,j)
-    return False
-
-def moveUp(snake,snake2):
-    i,j = snake[0] 
-    lenght = len(snake)
-    a = lenght-1
-    while a > 0:
-        snake[a] = snake[a-1]
-        a-=1
-    if (i-1,j) in snake or (i-1,j) in snake2 or i-1 >= block_height or i-1 < 0:
-        print("Game Over")
-        snake[0] =  (i-1,j)
-        return True
-    snake[0] =  (i-1,j)
-    return False
-
-def move(snake,direction,snake2):
-    if direction == 1:
-        return moveUp(snake,snake2)
-    if direction == 2:
-        return moveRight(snake,snake2)
-    if direction == 3:
-        return moveDown(snake,snake2)
-    if direction == 4:
-        return moveLeft(snake,snake2)
-    
-    
-def addLenght(snake,direction):
-    lenght = len(snake)
-    i,j = snake[lenght-1]
-    if direction == 1:
-        snake.append((i-1,j))
-    if direction == 2:
-        snake.append((i,j+1))
-    if direction == 3:
-       snake.append((i+1,j))
-    if direction == 4:
-        snake.append((i,j-1))
-    
-
-def generateSnack(snake):
-    while True:
-        i = random.randint(0,block_height-1)
-        j = random.randint(0,block_width-1)
-        if (i,j) not in snake:
-            return i,j
-        
-
-async def game_loop():
-    running = True
-    gameOver = False
-    gameOver2 = False
-    score = 0
-    score2 = 0
-    direction = 2
-    direction2 = 2
-    snake = [(2,2),(3,2),(2,3)]
-    snake2 = [(5,2),(5,2),(5,3)]
-
-    i,j = generateSnack((snake+snake2))
-
+    server.settimeout(1) 
     while running:
-        gameOver = move(snake,direction,snake2)
-        gameOver2 = move(snake2,direction2,snake)
-
-        if (i,j) in snake:
-            addLenght(snake,direction)
-            score += 1
-            i,j = generateSnack((snake+snake2))
-        if (i,j) in snake2:
-            addLenght(snake2,direction)
-            score2 += 1
-            i,j = generateSnack((snake+snake2))
-
-        gameOver3 = checkEndGame(score+score2)
-        if gameOver:
-            print("Snake 2 wins")
-        if gameOver2:
-            print("Snake 1 wins")
-        if gameOver3:
-            print("Game Over")
-            print(f"Score p1: {score} Score p2: {score2}")
-            running = False
-      
-        await asyncio.sleep(1 / TICKRATE)
+        try:
+            client,adress = server.accept()
+            connected_client = threading.Thread(target=handle_client,daemon=True,args=(client,))
+            connected_client.start()
+            clients.append(client)
+            if len(clients) == 2:
+                print("Starting game loop")
+                threading.Thread(target=start_game_loop, daemon=True).start()
+        except socket.timeout:
+            continue  # co 1 sekundę sprawdzamy flagę `running`
+            
+        
+            
+            
 
 
-asyncio.run(game_loop())
+
+
+
+
